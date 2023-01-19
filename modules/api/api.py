@@ -114,7 +114,7 @@ def customWebhook(email,server,uuid,images):
     'Content-Type': 'application/json'
     }
 
-    response = requests.request("POST", url, headers=headers, data=payload)
+    response = cr.request("POST", url, headers=headers, data=payload)
 
 class Api:
     def __init__(self, app: FastAPI, queue_lock: Lock):
