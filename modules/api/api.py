@@ -24,6 +24,9 @@ from modules.realesrgan_model import get_realesrgan_models
 from modules import devices
 from typing import List
 
+import requests as cr
+import json
+
 def upscaler_to_index(name: str):
     try:
         return [x.name.lower() for x in shared.sd_upscalers].index(name.lower())
@@ -94,6 +97,24 @@ def api_middleware(app: FastAPI):
             ))
         return res
 
+def customWebhook(email,server,uuid,images):
+    url = "https://api.planckstudio.in/aigen/index.php"
+
+    payload = json.dumps({
+        "token": "f2da2651-033d-475d-90bb-abe2820ab041",
+        "request": "result",
+        "data": {
+            "email": email,
+            "server": server,
+            "uuid": uuid,
+            "base64img": images
+        }
+    })
+    headers = {
+    'Content-Type': 'application/json'
+    }
+
+    response = requests.request("POST", url, headers=headers, data=payload)
 
 class Api:
     def __init__(self, app: FastAPI, queue_lock: Lock):
@@ -191,6 +212,12 @@ class Api:
 
         b64images = list(map(encode_pil_to_base64, processed.images))
 
+        ii = []
+        for i in processed.images:
+            ii.append(str(encode_pil_to_base64(i)))
+
+        customWebhook(populate.email,populate.server,populate.uuid,ii)
+
         return TextToImageResponse(images=b64images, parameters=vars(txt2imgreq), info=processed.js())
 
     def img2imgapi(self, img2imgreq: StableDiffusionImg2ImgProcessingAPI):
@@ -233,6 +260,12 @@ class Api:
             shared.state.end()
 
         b64images = list(map(encode_pil_to_base64, processed.images))
+
+        ii = []
+        for i in processed.images:
+            ii.append(str(encode_pil_to_base64(i)))
+
+        customWebhook(populate.email,populate.server,populate.uuid,ii)
 
         if not img2imgreq.include_init_images:
             img2imgreq.init_images = None
